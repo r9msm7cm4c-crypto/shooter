@@ -58,7 +58,7 @@
   .wbtn:active { transform:scale(.93); }
 
   #joystick {
-    position:absolute; bottom:calc(22px + env(safe-area-inset-bottom)); left:calc(22px + env(safe-area-inset-left)); width:118px; height:118px;
+    position:fixed; bottom:calc(22px + env(safe-area-inset-bottom)); left:calc(22px + env(safe-area-inset-left)); width:118px; height:118px;
     border-radius:50%; background:rgba(255,255,255,.07); border:2px solid rgba(255,255,255,.28);
     z-index:6; touch-action:none;
   }
@@ -68,7 +68,7 @@
     background:rgba(255,255,255,.4); border:2px solid rgba(255,255,255,.6); pointer-events:none;
   }
   #fire {
-    position:absolute; bottom:calc(28px + env(safe-area-inset-bottom)); right:calc(26px + env(safe-area-inset-right)); width:92px; height:92px;
+    position:fixed; bottom:calc(28px + env(safe-area-inset-bottom)); right:calc(26px + env(safe-area-inset-right)); width:92px; height:92px;
     border-radius:50%; background:rgba(235,80,55,.8); border:3px solid rgba(255,255,255,.5);
     z-index:6; color:#fff; font-weight:bold; font-size:16px;
     display:flex; align-items:center; justify-content:center; flex-direction:column; touch-action:none;
@@ -142,8 +142,6 @@
     </div>
   </div>
   <div id="weapons"></div>
-  <div id="joystick"><div class="knob" id="knob"></div></div>
-  <div id="fire"><span class="f-ic">🔫</span><span class="f-tx">射击</span></div>
   <div id="overlay">
     <h1>🔫 战术战场</h1>
     <div class="best" id="menu-best"></div>
@@ -165,6 +163,9 @@
     </div>
   </div>
 </div>
+
+<div id="joystick"><div class="knob" id="knob"></div></div>
+<div id="fire"><span class="f-ic">🔫</span><span class="f-tx">射击</span></div>
 
 <script>
 // ===== 音频引擎 =====

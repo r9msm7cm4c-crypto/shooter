@@ -1079,10 +1079,21 @@ installBtn.addEventListener('click', async () => {
 function tryLockLandscape() {
   try {
     if (screen.orientation && screen.orientation.lock) {
-      screen.orientation.lock('landscape').catch(() => {});
+      screen.orientation.lock('landscape').catch(() => {
+        screen.orientation.lock('landscape-primary').catch(() => {});
+      });
     }
   } catch (err) {}
 }
+// 首次触摸屏幕就尝试锁定横屏(不等到点开始按钮)
+let lockTried = false;
+function tryLockOnce() {
+  if (lockTried) return;
+  lockTried = true;
+  tryLockLandscape();
+}
+window.addEventListener('pointerdown', tryLockOnce, { once: true, passive: true });
+window.addEventListener('touchstart', tryLockOnce, { once: true, passive: true });
 
 resize();
 buildWeaponUI();

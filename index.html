@@ -766,10 +766,7 @@ let viewId = null, lastTX = 0, lastTY = 0;
 cvs.addEventListener('touchstart', e => {
   for (const t of e.touches) {
     if (viewId === null) {
-      const rect = cvs.getBoundingClientRect();
-      if (t.clientX - rect.left > rect.width / 2) {
-        viewId = t.identifier; lastTX = t.clientX; lastTY = t.clientY;
-      }
+      viewId = t.identifier; lastTX = t.clientX; lastTY = t.clientY;
     }
   }
 }, { passive: true });

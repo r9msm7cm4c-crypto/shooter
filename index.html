@@ -57,9 +57,9 @@
 
   /* ===== 虚拟摇杆 ===== */
   #joystick {
-    position:fixed; bottom:24px; left:24px; width:118px; height:118px;
+    position:absolute; bottom:22px; left:22px; width:118px; height:118px;
     border-radius:50%; background:rgba(255,255,255,.07); border:2px solid rgba(255,255,255,.28);
-    z-index:20; touch-action:none;
+    z-index:6; touch-action:none;
   }
   #joystick .knob {
     position:absolute; top:50%; left:50%; width:50px; height:50px;
@@ -69,9 +69,9 @@
   }
   /* ===== 射击按钮 ===== */
   #fire {
-    position:fixed; bottom:30px; right:28px; width:92px; height:92px;
+    position:absolute; bottom:28px; right:26px; width:92px; height:92px;
     border-radius:50%; background:rgba(235,80,55,.8); border:3px solid rgba(255,255,255,.5);
-    z-index:20; color:#fff; font-weight:bold; font-size:16px;
+    z-index:6; color:#fff; font-weight:bold; font-size:16px;
     display:flex; align-items:center; justify-content:center; flex-direction:column;
     touch-action:none; box-shadow:0 4px 14px rgba(0,0,0,.4);
   }
@@ -128,10 +128,9 @@
     </div>
     <div class="tip" id="menu-tip"></div>
   </div>
+  <div id="joystick"><div class="knob" id="knob"></div></div>
+  <div id="fire"><span class="f-ic">🔫</span><span class="f-tx">射击</span></div>
 </div>
-
-<div id="joystick"><div class="knob" id="knob"></div></div>
-<div id="fire"><span class="f-ic">🔫</span><span class="f-tx">射击</span></div>
 
 <script>
 // ===== 音频引擎 =====
@@ -264,12 +263,12 @@ let W, H, dpr;
 function isPortrait() { return window.innerHeight > window.innerWidth; }
 // 屏幕坐标 -> 游戏逻辑坐标(处理强制横屏旋转)
 function toGame(cx, cy) {
-  if (isPortrait()) return { x: window.innerHeight - cy, y: cx };
+  if (isPortrait()) return { x: cy, y: window.innerWidth - cx };
   return { x: cx, y: cy };
 }
 // 屏幕方向向量 -> 游戏逻辑方向向量
 function toGameVec(dx, dy) {
-  if (isPortrait()) return { x: -dy, y: dx };
+  if (isPortrait()) return { x: dy, y: -dx };
   return { x: dx, y: dy };
 }
 function resize() {

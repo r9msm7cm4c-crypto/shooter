@@ -91,7 +91,14 @@
   .btn:active { transform:scale(.95); }
   .row { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
   .tip { font-size:11px; color:#6e7681; line-height:1.8; max-width:600px; }
+  #room-input {
+    background:rgba(255,255,255,.08); border:2px solid #3a443a; border-radius:9px;
+    color:#e6edf3; padding:11px 14px; font-size:15px; width:190px; outline:none; text-align:center;
+  }
+  #room-input:focus { border-color:#4da6ff; }
+  #room-info { font-size:16px; color:#ffd23f; font-weight:bold; word-break:break-all; }
 </style>
+<script src="https://unpkg.com/peerjs@1.5.1/dist/peerjs.min.js"></script>
 <script type="importmap">
 { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
 </script>
@@ -122,8 +129,14 @@
     <div class="best" id="menu-best"></div>
     <div class="sub" id="menu-sub">消灭敌人，别被打死！第一人称射击</div>
     <div class="row">
-      <button class="btn" id="btn-single">开始游戏</button>
+      <button class="btn" id="btn-single">单人开始</button>
+      <button class="btn alt" id="btn-host">创建房间</button>
     </div>
+    <div class="row">
+      <input id="room-input" placeholder="输入房间码加入" />
+      <button class="btn alt" id="btn-join">加入房间</button>
+    </div>
+    <div class="sub" id="room-info" style="display:none"></div>
     <div class="tip" id="menu-tip"></div>
   </div>
 </div>
@@ -228,9 +241,9 @@ const WEAPONS = [
   { name:'DP-28', icon:'🌀', dmg:1, pellets:1, spread:0.025, rate:0.045, mag:60, reload:2.0, sfx:'minigun' },
 ];
 const ENEMY_TYPES = [
-  { hp:1, r:0.6, speed:2.6, color:0xe5533d, score:10 },
-  { hp:1, r:0.5, speed:4.6, color:0xe8a33d, score:15 },
-  { hp:3, r:0.85, speed:1.8, color:0xa06bde, score:30 },
+  { hp:1, r:0.6, speed:1.7, color:0xe5533d, score:10 },
+  { hp:1, r:0.5, speed:3.0, color:0xe8a33d, score:15 },
+  { hp:3, r:0.85, speed:1.2, color:0xa06bde, score:30 },
 ];
 
 function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
@@ -352,6 +365,7 @@ resize();
 
 // ===== 敌人 =====
 const enemies = [];
+let nextEnemyId = 1;
 function spawnEnemy() {
   const tier = Math.random();
   const t = tier < 0.55 ? ENEMY_TYPES[0] : tier < 0.8 ? ENEMY_TYPES[1] : ENEMY_TYPES[2];
@@ -367,7 +381,7 @@ function spawnEnemy() {
   mesh.position.set(x, 0.9, z);
   mesh.castShadow = true;
   scene.add(mesh);
-  const enemy = { mesh, hp: t.hp, maxHp: t.hp, speed: t.speed, score: t.score, color: t.color, r: t.r, flash: 0, dead: false, baseY: 0.9 };
+  const enemy = { id: nextEnemyId++, mesh, hp: t.hp, maxHp: t.hp, speed: t.speed, score: t.score, color: t.color, r: t.r, flash: 0, dead: false, baseY: 0.9 };
   mesh.userData.enemy = enemy;
   enemies.push(enemy);
 }
@@ -404,19 +418,23 @@ function shoot() {
   sfx[w.sfx]();
   const dir = new THREE.Vector3();
   camera.getWorldDirection(dir);
-  for (let i = 0; i < w.pellets; i++) {
-    const d = dir.clone();
-    if (w.spread > 0) {
-      d.x += (Math.random() - 0.5) * w.spread * 2;
-      d.y += (Math.random() - 0.5) * w.spread * 2;
-      d.z += (Math.random() - 0.5) * w.spread * 2;
-      d.normalize();
-    }
-    const rc = new THREE.Raycaster(camera.position, d, 0, 100);
-    const hits = rc.intersectObjects(enemies.map(e => e.mesh), false);
-    if (hits.length > 0) {
-      const e = hits[0].object.userData.enemy;
-      if (e && !e.dead) hitEnemy(e, w.dmg);
+  if (netMode === 'guest') {
+    if (conn && conn.open) conn.send({ type: 'shoot', x: camera.position.x, z: camera.position.z, dx: dir.x, dy: dir.y, dz: dir.z, dmg: w.dmg, pellets: w.pellets, spread: w.spread });
+  } else {
+    for (let i = 0; i < w.pellets; i++) {
+      const d = dir.clone();
+      if (w.spread > 0) {
+        d.x += (Math.random() - 0.5) * w.spread * 2;
+        d.y += (Math.random() - 0.5) * w.spread * 2;
+        d.z += (Math.random() - 0.5) * w.spread * 2;
+        d.normalize();
+      }
+      const rc = new THREE.Raycaster(camera.position, d, 0, 100);
+      const hits = rc.intersectObjects(enemies.map(e => e.mesh), false);
+      if (hits.length > 0) {
+        const e = hits[0].object.userData.enemy;
+        if (e && !e.dead) hitEnemy(e, w.dmg);
+      }
     }
   }
   updateHUD();
@@ -512,43 +530,55 @@ function update(dt) {
   // 射击
   if (mouseDown || joyFire || keys[' ']) shoot();
 
-  // 刷怪
-  spawnTimer -= dt;
-  if (spawnTimer <= 0) {
-    spawnEnemy();
-    spawnTimer = Math.max(0.3, 0.85 - score * 0.003);
+  // 刷怪 + 敌人(仅单机或主机)
+  if (netMode !== 'guest') {
+    spawnTimer -= dt;
+    if (spawnTimer <= 0) {
+      spawnEnemy();
+      spawnTimer = Math.max(0.3, 0.85 - score * 0.003);
+    }
+
+    const t3 = now * 2;
+    for (let i = enemies.length - 1; i >= 0; i--) {
+      const e = enemies[i];
+      if (e.dead) continue;
+      // 目标:最近的玩家(host 或 guest)
+      let tx = camera.position.x, tz = camera.position.z, isGuest = false;
+      if (netMode === 'host' && remotePlayer) {
+        const hd = Math.hypot(camera.position.x - e.mesh.position.x, camera.position.z - e.mesh.position.z);
+        const gd = Math.hypot(remotePlayer.x - e.mesh.position.x, remotePlayer.z - e.mesh.position.z);
+        if (gd < hd) { tx = remotePlayer.x; tz = remotePlayer.z; isGuest = true; }
+      }
+      const dx = tx - e.mesh.position.x;
+      const dz = tz - e.mesh.position.z;
+      const d = Math.hypot(dx, dz) || 1;
+      const step = e.speed * dt;
+      const nx = e.mesh.position.x + dx / d * step;
+      const nz = e.mesh.position.z + dz / d * step;
+      if (!collides(nx, nz, e.r)) {
+        e.mesh.position.x = nx;
+        e.mesh.position.z = nz;
+      }
+      e.mesh.position.y = e.baseY + Math.sin(t3 + i) * 0.08;
+      e.mesh.rotation.y = Math.atan2(dx, dz);
+      if (d < e.r + playerR) {
+        if (isGuest) { if (conn && conn.open) conn.send({ type: 'damage', amt: 8 + e.r * 6 }); }
+        else damagePlayer(8 + e.r * 6);
+        removeEnemy(i);
+        continue;
+      }
+      if (e.flash > 0) {
+        e.flash -= dt;
+        e.mesh.material.emissive = new THREE.Color(e.flash > 0 ? 0xffffff : 0x000000);
+      }
+    }
   }
 
-  // 敌人
-  const t3 = now * 2;
-  for (let i = enemies.length - 1; i >= 0; i--) {
-    const e = enemies[i];
-    if (e.dead) continue;
-    const dx = camera.position.x - e.mesh.position.x;
-    const dz = camera.position.z - e.mesh.position.z;
-    const d = Math.hypot(dx, dz) || 1;
-    const step = e.speed * dt;
-    const nx = e.mesh.position.x + dx / d * step;
-    const nz = e.mesh.position.z + dz / d * step;
-    if (!collides(nx, nz, e.r)) {
-      e.mesh.position.x = nx;
-      e.mesh.position.z = nz;
-    }
-    // 浮动动画
-    e.mesh.position.y = e.baseY + Math.sin(t3 + i) * 0.08;
-    // 面向玩家
-    e.mesh.rotation.y = Math.atan2(dx, dz);
-    // 攻击
-    if (d < e.r + playerR) {
-      damagePlayer(8 + e.r * 6);
-      removeEnemy(i);
-      continue;
-    }
-    // 命中闪白
-    if (e.flash > 0) {
-      e.flash -= dt;
-      e.mesh.material.emissive = new THREE.Color(e.flash > 0 ? 0xffffff : 0x000000);
-    }
+  // 渲染对方玩家
+  if (remotePlayer) {
+    remotePlayer.mesh.position.x = remotePlayer.x;
+    remotePlayer.mesh.position.z = remotePlayer.z;
+    remotePlayer.mesh.rotation.y = remotePlayer.yaw;
   }
 }
 
@@ -566,6 +596,7 @@ function gameOver() {
   running = false;
   sfx.gameover();
   stopMusic();
+  if (netTimer) { clearInterval(netTimer); netTimer = null; }
   const ov = document.getElementById('overlay');
   ov.style.display = 'flex';
   ov.querySelector('h1').textContent = '💀 战斗结束';
@@ -574,6 +605,135 @@ function gameOver() {
   ov.querySelector('#menu-sub').textContent = '再接再厉！';
   ov.querySelector('#btn-single').textContent = '再来一局';
 }
+// ===== 联机 =====
+let netMode = 'single'; // single | host | guest
+let peer = null, conn = null, roomId = null;
+let remotePlayer = null;
+
+function spawnRemotePlayer(color) {
+  if (remotePlayer) { scene.remove(remotePlayer.mesh); remotePlayer = null; }
+  const geo = new THREE.BoxGeometry(0.6, 1.8, 0.6);
+  const mat = new THREE.MeshLambertMaterial({ color });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.position.set(0, 0.9, -5);
+  scene.add(mesh);
+  remotePlayer = { mesh, x: 0, z: -5, yaw: 0 };
+}
+
+function sendState() {
+  if (conn && conn.open) conn.send({ type: 'state', x: camera.position.x, z: camera.position.z, yaw, pitch });
+}
+function broadcastWorld() {
+  if (!conn || !conn.open || netMode !== 'host') return;
+  const list = enemies.map(e => ({ id: e.id, x: e.mesh.position.x, z: e.mesh.position.z, hp: e.hp, color: e.color }));
+  conn.send({ type: 'world', enemies: list, score, hostX: camera.position.x, hostZ: camera.position.z, hostYaw: yaw });
+}
+function syncEnemies(list) {
+  const ids = new Set(list.map(e => e.id));
+  for (let i = enemies.length - 1; i >= 0; i--) {
+    if (!ids.has(enemies[i].id)) { scene.remove(enemies[i].mesh); enemies.splice(i, 1); }
+  }
+  for (const d of list) {
+    let e = enemies.find(x => x.id === d.id);
+    if (!e) {
+      const geo = new THREE.BoxGeometry(0.8, 1.8, 0.8);
+      const mat = new THREE.MeshLambertMaterial({ color: d.color });
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.position.set(d.x, 0.9, d.z);
+      mesh.castShadow = true;
+      scene.add(mesh);
+      e = { id: d.id, mesh, hp: d.hp, maxHp: 3, speed: 0, score: 10, color: d.color, r: 0.6, flash: 0, dead: false, baseY: 0.9 };
+      mesh.userData.enemy = e;
+      enemies.push(e);
+    } else {
+      e.mesh.position.x = d.x; e.mesh.position.z = d.z; e.hp = d.hp;
+    }
+  }
+}
+function guestShoot(d) {
+  const pos = new THREE.Vector3(d.x, 1.7, d.z);
+  const base = new THREE.Vector3(d.dx, d.dy, d.dz);
+  const pellets = d.pellets || 1, spread = d.spread || 0;
+  for (let i = 0; i < pellets; i++) {
+    const dir = base.clone();
+    if (spread > 0) {
+      dir.x += (Math.random() - 0.5) * spread * 2;
+      dir.y += (Math.random() - 0.5) * spread * 2;
+      dir.z += (Math.random() - 0.5) * spread * 2;
+      dir.normalize();
+    }
+    const rc = new THREE.Raycaster(pos, dir, 0, 100);
+    const hits = rc.intersectObjects(enemies.map(e => e.mesh), false);
+    if (hits.length > 0) {
+      const e = hits[0].object.userData.enemy;
+      if (e && !e.dead) { hitEnemy(e, d.dmg); break; }
+    }
+  }
+}
+function onMessage(data) {
+  if (!data) return;
+  if (data.type === 'state' && remotePlayer) {
+    remotePlayer.x = data.x; remotePlayer.z = data.z; remotePlayer.yaw = data.yaw;
+  } else if (data.type === 'world') {
+    syncEnemies(data.enemies);
+    score = data.score;
+    if (remotePlayer) { remotePlayer.x = data.hostX; remotePlayer.z = data.hostZ; remotePlayer.yaw = data.hostYaw; }
+    updateHUD();
+  } else if (data.type === 'shoot') {
+    guestShoot(data);
+  } else if (data.type === 'damage') {
+    damagePlayer(data.amt);
+  }
+}
+
+function createRoom() {
+  netMode = 'host';
+  const info = document.getElementById('room-info');
+  info.style.display = 'block';
+  info.textContent = '正在创建房间...';
+  peer = new Peer();
+  peer.on('open', id => {
+    roomId = id;
+    info.textContent = '房间码：' + id + '（发给朋友加入）';
+  });
+  peer.on('connection', c => {
+    conn = c;
+    conn.on('open', () => { startGame(); });
+    conn.on('data', onMessage);
+    conn.on('close', () => { alert('对方已离开'); location.reload(); });
+  });
+  peer.on('error', err => {
+    info.textContent = '创建失败：' + (err.type || err);
+  });
+}
+function joinRoom(code) {
+  netMode = 'guest';
+  const info = document.getElementById('room-info');
+  info.style.display = 'block';
+  info.textContent = '正在连接...';
+  peer = new Peer();
+  peer.on('open', () => {
+    conn = peer.connect(code, { reliable: true });
+    conn.on('open', () => { info.textContent = '已连接！'; startGame(); });
+    conn.on('data', onMessage);
+    conn.on('close', () => { alert('连接已断开'); location.reload(); });
+  });
+  peer.on('error', err => {
+    info.textContent = '连接失败：' + (err.type || err) + '（请检查房间码）';
+  });
+}
+
+// 联机同步循环
+let netTimer = null;
+function startNetLoop() {
+  if (netTimer) clearInterval(netTimer);
+  netTimer = setInterval(() => {
+    if (!running) return;
+    if (netMode === 'host') broadcastWorld();
+    else if (netMode === 'guest') sendState();
+  }, 50);
+}
+
 // ===== 输入 =====
 const cvs = renderer.domElement;
 
@@ -673,7 +833,8 @@ function showMenu() {
   tipEl.innerHTML =
     '📱 <b>手机</b>：左下摇杆移动 · 右半屏拖动转视角 · 右下按钮射击<br>' +
     '⌨️ <b>电脑</b>：WASD 移动 · 点击锁定鼠标转视角 · 左键射击<br>' +
-    '🔫 换枪 1-5 · 🔁 换弹 R（统一 2 秒）';
+    '🔫 换枪 1-5 · 🔁 换弹 R（统一 2 秒）<br>' +
+    '🌐 <b>联机</b>：创建房间生成房间码，朋友输入房间码即可加入对战';
 }
 function startGame() {
   hp = 100; score = 0; weaponIdx = 0; ammo = WEAPONS[0].mag;
@@ -684,17 +845,30 @@ function startGame() {
   for (const e of enemies) scene.remove(e.mesh);
   enemies.length = 0;
   genObstacles();
+  // 联机:对方玩家
+  if (netMode === 'host') spawnRemotePlayer(0x5cd36b);
+  else if (netMode === 'guest') spawnRemotePlayer(0x4da6ff);
+  else remotePlayer = null;
   running = true;
   lastTime = performance.now();
   buildWeaponUI();
   updateHUD();
   audio();
   startMusic();
+  startNetLoop();
   requestAnimationFrame(loop);
 }
 document.getElementById('btn-single').addEventListener('click', () => {
+  netMode = 'single';
   overlay.style.display = 'none';
   startGame();
+});
+document.getElementById('btn-host').addEventListener('click', () => {
+  createRoom();
+});
+document.getElementById('btn-join').addEventListener('click', () => {
+  const code = document.getElementById('room-input').value.trim();
+  if (code) joinRoom(code);
 });
 
 // 初始渲染

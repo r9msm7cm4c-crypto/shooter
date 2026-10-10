@@ -6,6 +6,13 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
+<link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxOTIgMTkyIj48cmVjdCB3aWR0aD0iMTkyIiBoZWlnaHQ9IjE5MiIgcng9IjQwIiBmaWxsPSIjMWEyYTE4Ii8+PGNpcmNsZSBjeD0iOTYiIGN5PSI5NiIgcj0iNTgiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzdmZDY2YiIgc3Ryb2tlLXdpZHRoPSI4Ii8+PGxpbmUgeDE9Ijk2IiB5MT0iMTgiIHgyPSI5NiIgeTI9IjE3NCIgc3Ryb2tlPSIjZmZkMjNmIiBzdHJva2Utd2lkdGg9IjEwIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48bGluZSB4MT0iMTgiIHkxPSI5NiIgeDI9IjE3NCIgeTI9Ijk2IiBzdHJva2U9IiNmZmQyM2YiIHN0cm9rZS13aWR0aD0iMTAiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjxjaXJjbGUgY3g9Ijk2IiBjeT0iOTYiIHI9IjE0IiBmaWxsPSIjZmY1NTU1Ii8+PC9zdmc+">
+<link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxOTIgMTkyIj48cmVjdCB3aWR0aD0iMTkyIiBoZWlnaHQ9IjE5MiIgcng9IjQwIiBmaWxsPSIjMWEyYTE4Ii8+PGNpcmNsZSBjeD0iOTYiIGN5PSI5NiIgcj0iNTgiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzdmZDY2YiIgc3Ryb2tlLXdpZHRoPSI4Ii8+PGxpbmUgeDE9Ijk2IiB5MT0iMTgiIHgyPSI5NiIgeTI9IjE3NCIgc3Ryb2tlPSIjZmZkMjNmIiBzdHJva2Utd2lkdGg9IjEwIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48bGluZSB4MT0iMTgiIHkxPSI5NiIgeDI9IjE3NCIgeTI9Ijk2IiBzdHJva2U9IiNmZmQyM2YiIHN0cm9rZS13aWR0aD0iMTAiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjxjaXJjbGUgY3g9Ijk2IiBjeT0iOTYiIHI9IjE0IiBmaWxsPSIjZmY1NTU1Ii8+PC9zdmc+">
+<meta name="theme-color" content="#20301d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="战术战场">
 <title>枪战射击 · 战术战场</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
@@ -72,17 +79,33 @@
 
   #overlay {
     position:absolute; inset:0; z-index:10; display:flex; flex-direction:column;
-    align-items:center; justify-content:center; gap:14px; text-align:center; background:rgba(8,12,8,.94); padding:20px;
+    align-items:center; justify-content:center; gap:13px; text-align:center;
+    background:radial-gradient(circle at 50% 28%, rgba(46,78,38,.6), rgba(8,12,8,.97) 72%); padding:20px;
   }
-  #overlay h1 { font-size:28px; color:#7fd66b; }
+  #overlay h1 {
+    font-size:31px; font-weight:900; letter-spacing:3px;
+    background:linear-gradient(180deg, #c6f0a0, #7fd66b 55%, #3f9d4a);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
   #overlay h2 { font-size:22px; color:#f85149; }
   #overlay .sub { font-size:13px; color:#8b949e; line-height:1.6; max-width:520px; }
   #overlay .best { font-size:14px; color:#ffd23f; }
-  .btn { background:#2a7d3b; color:#fff; border:none; padding:12px 28px; font-size:16px; border-radius:9px; cursor:pointer; font-weight:bold; min-width:170px; }
-  .btn.alt { background:#3a443a; }
+  .btn {
+    background:linear-gradient(180deg, #3fa24e, #2a7d3b); color:#fff; border:none;
+    padding:12px 28px; font-size:16px; border-radius:12px; cursor:pointer; font-weight:bold; min-width:170px;
+    box-shadow:0 4px 14px rgba(0,0,0,.35);
+  }
+  .btn.alt { background:linear-gradient(180deg, #4a554a, #333d33); }
   .btn:active { transform:scale(.95); }
   .row { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
   .tip { font-size:11px; color:#6e7681; line-height:1.8; max-width:600px; }
+  .install-guide {
+    background:rgba(30,42,28,.75); border:1px solid rgba(127,214,107,.35); border-radius:12px;
+    padding:10px 16px; max-width:460px; text-align:left; margin-top:4px;
+  }
+  .ig-title { font-size:13px; font-weight:bold; color:#a8e063; margin-bottom:5px; }
+  .ig-steps { font-size:12px; color:#c8d6c2; line-height:1.9; }
+  .ig-steps b { color:#ffd23f; }
   #room-input {
     background:rgba(255,255,255,.08); border:2px solid #3a443a; border-radius:9px;
     color:#e6edf3; padding:11px 14px; font-size:15px; width:190px; outline:none; text-align:center;
@@ -129,6 +152,10 @@
     </div>
     <div class="sub" id="room-info" style="display:none"></div>
     <div class="tip" id="menu-tip"></div>
+    <div class="install-guide" id="install-guide">
+      <div class="ig-title">📲 添加到主屏幕，像 App 一样玩</div>
+      <div class="ig-steps" id="ig-steps">加载中…</div>
+    </div>
   </div>
 </div>
 
@@ -743,7 +770,9 @@ function gameOver() {
   const ov = document.getElementById('overlay');
   ov.style.display = 'flex';
   ov.querySelector('h1').textContent = '💀 战斗结束';
+  ov.querySelector('h1').style.background = 'none';
   ov.querySelector('h1').style.color = '#f85149';
+  ov.querySelector('h1').style.webkitTextFillColor = '#f85149';
   ov.querySelector('#menu-best').textContent = '本局得分：' + total + '　|　最高分：' + (mode === 'coop' ? bestC : bestS);
   ov.querySelector('#menu-sub').textContent = '再接再厉！';
   ov.querySelector('#btn-single').textContent = '再来一局';
@@ -970,7 +999,9 @@ const tipEl = document.getElementById('menu-tip');
 function showMenu(title, sub) {
   overlay.style.display = 'flex';
   overlay.querySelector('h1').textContent = title;
-  overlay.querySelector('h1').style.color = '#7fd66b';
+  overlay.querySelector('h1').style.background = 'linear-gradient(180deg, #c6f0a0, #7fd66b 55%, #3f9d4a)';
+  overlay.querySelector('h1').style.color = 'transparent';
+  overlay.querySelector('h1').style.webkitTextFillColor = 'transparent';
   overlay.querySelector('#menu-best').textContent = '🏆 单人最高分 ' + bestS + '　|　双人最高分 ' + bestC;
   overlay.querySelector('#menu-sub').textContent = sub || '';
   overlay.querySelector('#btn-single').textContent = '单人开始';
@@ -1002,6 +1033,21 @@ document.getElementById('btn-join').addEventListener('click', () => {
   const code = document.getElementById('room-input').value.trim();
   if (code) joinRoom(code);
 });
+
+// 检测平台,显示"添加到主屏幕"教程
+(function () {
+  const ua = navigator.userAgent;
+  const isIOS = /iPhone|iPad|iPod/.test(ua);
+  const isAndroid = /Android/.test(ua);
+  const steps = document.getElementById('ig-steps');
+  if (isIOS) {
+    steps.innerHTML = '1. 点底部 <b>分享</b> 按钮（方框↑）<br>2. 下滑选 <b>「添加到主屏幕」</b><br>3. 点右上角 <b>「添加」</b>，完成！';
+  } else if (isAndroid) {
+    steps.innerHTML = '1. 点右上角 <b>「⋮」</b> 菜单<br>2. 选 <b>「添加到主屏幕」/「安装应用」</b><br>3. 点 <b>「安装」</b>，完成！';
+  } else {
+    steps.innerHTML = '桌面浏览器：地址栏点 <b>「安装」</b> 图标，或按 Ctrl+D 收藏。';
+  }
+})();
 
 resize();
 buildWeaponUI();

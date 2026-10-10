@@ -17,18 +17,18 @@
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   html,body {
-    background:#0a0f0a; color:#e6edf3; overflow:hidden; height:100%;
+    background:#0a0f0a; color:#e6edf3; overflow:hidden; height:100%; height:100dvh;
     font-family:-apple-system,"PingFang SC",sans-serif; user-select:none;
     -webkit-tap-highlight-color:transparent; touch-action:none; position:fixed; inset:0;
   }
-  #wrap { position:relative; width:100vw; height:100vh; }
+  #wrap { position:relative; width:100vw; height:100vh; height:100dvh; }
   canvas { position:absolute; top:0; left:0; display:block; }
   @media (orientation: portrait) {
     #wrap { width:100vh; height:100vw; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%) rotate(90deg); }
   }
 
   #hud {
-    position:absolute; top:0; left:0; right:0; padding:8px 14px;
+    position:absolute; top:0; left:0; right:0; padding:calc(8px + env(safe-area-inset-top)) 14px 8px;
     display:flex; justify-content:space-between; align-items:center;
     font-weight:bold; pointer-events:none; z-index:5; gap:8px;
   }
@@ -45,7 +45,7 @@
   #mode-label { font-size:11px; color:#8b949e; }
 
   #weapons {
-    position:absolute; bottom:10px; left:50%; transform:translateX(-50%);
+    position:absolute; bottom:calc(10px + env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%);
     display:flex; gap:6px; z-index:5; flex-wrap:wrap; justify-content:center; padding:0 10px;
   }
   .wbtn {
@@ -58,7 +58,7 @@
   .wbtn:active { transform:scale(.93); }
 
   #joystick {
-    position:absolute; bottom:22px; left:22px; width:118px; height:118px;
+    position:absolute; bottom:calc(22px + env(safe-area-inset-bottom)); left:calc(22px + env(safe-area-inset-left)); width:118px; height:118px;
     border-radius:50%; background:rgba(255,255,255,.07); border:2px solid rgba(255,255,255,.28);
     z-index:6; touch-action:none;
   }
@@ -68,7 +68,7 @@
     background:rgba(255,255,255,.4); border:2px solid rgba(255,255,255,.6); pointer-events:none;
   }
   #fire {
-    position:absolute; bottom:28px; right:26px; width:92px; height:92px;
+    position:absolute; bottom:calc(28px + env(safe-area-inset-bottom)); right:calc(26px + env(safe-area-inset-right)); width:92px; height:92px;
     border-radius:50%; background:rgba(235,80,55,.8); border:3px solid rgba(255,255,255,.5);
     z-index:6; color:#fff; font-weight:bold; font-size:16px;
     display:flex; align-items:center; justify-content:center; flex-direction:column; touch-action:none;
@@ -107,6 +107,12 @@
   .ig-title { font-size:12px; font-weight:bold; color:#a8e063; }
   .ig-steps { font-size:11px; color:#c8d6c2; line-height:1.7; }
   .ig-steps b { color:#ffd23f; }
+  .it-btn {
+    margin-top:6px; background:linear-gradient(180deg, #4da6ff, #2f7bd9); color:#fff; border:none;
+    padding:8px 14px; font-size:13px; border-radius:8px; cursor:pointer; font-weight:bold; width:100%;
+    box-shadow:0 2px 8px rgba(0,0,0,.3);
+  }
+  .it-btn:active { transform:scale(.97); }
   #room-input {
     background:rgba(255,255,255,.08); border:2px solid #3a443a; border-radius:9px;
     color:#e6edf3; padding:11px 14px; font-size:15px; width:190px; outline:none; text-align:center;
@@ -155,6 +161,7 @@
     <div class="install-guide" id="install-guide">
       <div class="ig-title">📲 添加到主屏幕</div>
       <div class="ig-steps" id="ig-steps">加载中…</div>
+      <button class="it-btn" id="btn-install" style="display:none">⚡ 一键安装到主屏幕</button>
     </div>
   </div>
 </div>
@@ -1043,6 +1050,22 @@ document.getElementById('btn-join').addEventListener('click', () => {
     steps.innerHTML = '地址栏点 <b>安装</b> 图标，或 Ctrl+D 收藏';
   }
 })();
+
+// 一键安装到主屏幕(PWA,Android Chrome 支持原生安装)
+let deferredPrompt = null;
+const installBtn = document.getElementById('btn-install');
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  installBtn.style.display = 'block';
+});
+installBtn.addEventListener('click', async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  try { await deferredPrompt.userChoice; } catch (err) {}
+  deferredPrompt = null;
+  installBtn.style.display = 'none';
+});
 
 resize();
 buildWeaponUI();

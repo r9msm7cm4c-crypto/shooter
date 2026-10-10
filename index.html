@@ -13,23 +13,22 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="战术战场">
-<link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22%E6%88%98%E6%9C%AF%E6%88%98%E5%9C%BA%22%2C%22short_name%22%3A%22%E6%88%98%E6%9C%AF%E6%88%98%E5%9C%BA%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22orientation%22%3A%22landscape%22%2C%22background_color%22%3A%22%230a0f0a%22%2C%22theme_color%22%3A%22%2320301d%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxOTIgMTkyIj48cmVjdCB3aWR0aD0iMTkyIiBoZWlnaHQ9IjE5MiIgcng9IjQwIiBmaWxsPSIjMWEyYTE4Ii8%2BPGNpcmNsZSBjeD0iOTYiIGN5PSI5NiIgcj0iNTgiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzdmZDY2YiIgc3Ryb2tlLXdpZHRoPSI4Ii8%2BPGxpbmUgeDE9Ijk2IiB5MT0iMTgiIHgyPSI5NiIgeTI9IjE3NCIgc3Ryb2tlPSIjZmZkMjNmIiBzdHJva2Utd2lkdGg9IjEwIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48bGluZSB4MT0iMTgiIHkxPSI5NiIgeDI9IjE3NCIgeTI9Ijk2IiBzdHJva2U9IiNmZmQyM2YiIHN0cm9rZS13aWR0aD0iMTAiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjxjaXJjbGUgY3g9Ijk2IiBjeT0iOTYiIHI9IjE0IiBmaWxsPSIjZmY1NTU1Ii8%2BPC9zdmc%2B%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%2C%22purpose%22%3A%22any%22%7D%2C%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxOTIgMTkyIj48cmVjdCB3aWR0aD0iMTkyIiBoZWlnaHQ9IjE5MiIgcng9IjQwIiBmaWxsPSIjMWEyYTE4Ii8%2BPGNpcmNsZSBjeD0iOTYiIGN5PSI5NiIgcj0iNTgiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzdmZDY2YiIgc3Ryb2tlLXdpZHRoPSI4Ii8%2BPGxpbmUgeDE9Ijk2IiB5MT0iMTgiIHgyPSI5NiIgeTI9IjE3NCIgc3Ryb2tlPSIjZmZkMjNmIiBzdHJva2Utd2lkdGg9IjEwIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48bGluZSB4MT0iMTgiIHkxPSI5NiIgeDI9IjE3NCIgeTI9Ijk2IiBzdHJva2U9IiNmZmQyM2YiIHN0cm9rZS13aWR0aD0iMTAiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjxjaXJjbGUgY3g9Ijk2IiBjeT0iOTYiIHI9IjE0IiBmaWxsPSIjZmY1NTU1Ii8%2BPC9zdmc%2B%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%2C%22purpose%22%3A%22any%22%7D%5D%7D">
 <title>枪战射击 · 战术战场</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   html,body {
-    background:#0a0f0a; color:#e6edf3; overflow:hidden; height:100%; height:100dvh;
+    background:#0a0f0a; color:#e6edf3; overflow:hidden; height:100%;
     font-family:-apple-system,"PingFang SC",sans-serif; user-select:none;
     -webkit-tap-highlight-color:transparent; touch-action:none; position:fixed; inset:0;
   }
-  #wrap { position:relative; width:100vw; height:100vh; height:100dvh; }
+  #wrap { position:relative; width:100vw; height:100vh; }
   canvas { position:absolute; top:0; left:0; display:block; }
   @media (orientation: portrait) {
     #wrap { width:100vh; height:100vw; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%) rotate(90deg); }
   }
 
   #hud {
-    position:absolute; top:0; left:0; right:0; padding:calc(8px + env(safe-area-inset-top)) 14px 8px;
+    position:absolute; top:0; left:0; right:0; padding:8px 14px;
     display:flex; justify-content:space-between; align-items:center;
     font-weight:bold; pointer-events:none; z-index:5; gap:8px;
   }
@@ -46,7 +45,7 @@
   #mode-label { font-size:11px; color:#8b949e; }
 
   #weapons {
-    position:absolute; bottom:calc(10px + env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%);
+    position:absolute; bottom:10px; left:50%; transform:translateX(-50%);
     display:flex; gap:6px; z-index:5; flex-wrap:wrap; justify-content:center; padding:0 10px;
   }
   .wbtn {
@@ -59,7 +58,7 @@
   .wbtn:active { transform:scale(.93); }
 
   #joystick {
-    position:fixed; bottom:calc(22px + env(safe-area-inset-bottom)); left:calc(22px + env(safe-area-inset-left)); width:118px; height:118px;
+    position:absolute; bottom:22px; left:22px; width:118px; height:118px;
     border-radius:50%; background:rgba(255,255,255,.07); border:2px solid rgba(255,255,255,.28);
     z-index:6; touch-action:none;
   }
@@ -69,7 +68,7 @@
     background:rgba(255,255,255,.4); border:2px solid rgba(255,255,255,.6); pointer-events:none;
   }
   #fire {
-    position:fixed; bottom:calc(28px + env(safe-area-inset-bottom)); right:calc(26px + env(safe-area-inset-right)); width:92px; height:92px;
+    position:absolute; bottom:28px; right:26px; width:92px; height:92px;
     border-radius:50%; background:rgba(235,80,55,.8); border:3px solid rgba(255,255,255,.5);
     z-index:6; color:#fff; font-weight:bold; font-size:16px;
     display:flex; align-items:center; justify-content:center; flex-direction:column; touch-action:none;
@@ -108,12 +107,6 @@
   .ig-title { font-size:12px; font-weight:bold; color:#a8e063; }
   .ig-steps { font-size:11px; color:#c8d6c2; line-height:1.7; }
   .ig-steps b { color:#ffd23f; }
-  .it-btn {
-    margin-top:6px; background:linear-gradient(180deg, #4da6ff, #2f7bd9); color:#fff; border:none;
-    padding:8px 14px; font-size:13px; border-radius:8px; cursor:pointer; font-weight:bold; width:100%;
-    box-shadow:0 2px 8px rgba(0,0,0,.3);
-  }
-  .it-btn:active { transform:scale(.97); }
   #room-input {
     background:rgba(255,255,255,.08); border:2px solid #3a443a; border-radius:9px;
     color:#e6edf3; padding:11px 14px; font-size:15px; width:190px; outline:none; text-align:center;
@@ -143,6 +136,8 @@
     </div>
   </div>
   <div id="weapons"></div>
+  <div id="joystick"><div class="knob" id="knob"></div></div>
+  <div id="fire"><span class="f-ic">🔫</span><span class="f-tx">射击</span></div>
   <div id="overlay">
     <h1>🔫 战术战场</h1>
     <div class="best" id="menu-best"></div>
@@ -160,13 +155,9 @@
     <div class="install-guide" id="install-guide">
       <div class="ig-title">📲 添加到主屏幕</div>
       <div class="ig-steps" id="ig-steps">加载中…</div>
-      <button class="it-btn" id="btn-install" style="display:none">⚡ 一键安装到主屏幕</button>
     </div>
   </div>
 </div>
-
-<div id="joystick"><div class="knob" id="knob"></div></div>
-<div id="fire"><span class="f-ic">🔫</span><span class="f-tx">射击</span></div>
 
 <script>
 // ===== 音频引擎 =====
@@ -1017,7 +1008,6 @@ function showMenu(title, sub) {
 }
 
 document.getElementById('btn-single').addEventListener('click', () => {
-  tryLockLandscape();
   netMode = 'single';
   overlay.style.display = 'none';
   initGame('single');
@@ -1025,7 +1015,6 @@ document.getElementById('btn-single').addEventListener('click', () => {
   animId = requestAnimationFrame(loop);
 });
 document.getElementById('btn-coop').addEventListener('click', () => {
-  tryLockLandscape();
   netMode = 'single';
   overlay.style.display = 'none';
   initGame('coop');
@@ -1054,31 +1043,6 @@ document.getElementById('btn-join').addEventListener('click', () => {
     steps.innerHTML = '地址栏点 <b>安装</b> 图标，或 Ctrl+D 收藏';
   }
 })();
-
-// 一键安装到主屏幕(PWA,Android Chrome 支持原生安装)
-let deferredPrompt = null;
-const installBtn = document.getElementById('btn-install');
-window.addEventListener('beforeinstallprompt', e => {
-  e.preventDefault();
-  deferredPrompt = e;
-  installBtn.style.display = 'block';
-});
-installBtn.addEventListener('click', async () => {
-  if (!deferredPrompt) return;
-  deferredPrompt.prompt();
-  try { await deferredPrompt.userChoice; } catch (err) {}
-  deferredPrompt = null;
-  installBtn.style.display = 'none';
-});
-
-// 尝试锁定横屏(用户手势触发,部分浏览器支持)
-function tryLockLandscape() {
-  try {
-    if (screen.orientation && screen.orientation.lock) {
-      screen.orientation.lock('landscape').catch(() => {});
-    }
-  } catch (err) {}
-}
 
 resize();
 buildWeaponUI();

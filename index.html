@@ -23,17 +23,9 @@
   }
   #wrap { position:relative; width:100vw; height:100vh; }
   canvas { position:absolute; top:0; left:0; display:block; }
-
-  #rotate {
-    position:fixed; inset:0; z-index:100; display:none;
-    align-items:center; justify-content:center; flex-direction:column; gap:16px;
-    background:#0a0f0a; text-align:center; padding:30px;
+  @media (orientation: portrait) {
+    #wrap { width:100vh; height:100vw; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%) rotate(90deg); }
   }
-  #rotate .ic { font-size:56px; animation:spin 1.6s ease-in-out infinite; }
-  @keyframes spin { 0%,20%{transform:rotate(0)} 50%,70%{transform:rotate(90deg)} 100%{transform:rotate(90deg)} }
-  #rotate p { font-size:18px; color:#e6edf3; font-weight:bold; }
-  #rotate .s { font-size:13px; color:#8b949e; }
-  @media (orientation: portrait) { #rotate { display:flex; } }
 
   #hud {
     position:absolute; top:0; left:0; right:0; padding:8px 14px;
@@ -77,11 +69,9 @@
   }
   #fire {
     position:absolute; bottom:28px; right:26px; width:92px; height:92px;
-    border-radius:50%; background:#e14e38; border:3px solid #ffd9d4;
+    border-radius:50%; background:rgba(235,80,55,.8); border:3px solid rgba(255,255,255,.5);
     z-index:6; color:#fff; font-weight:bold; font-size:16px;
     display:flex; align-items:center; justify-content:center; flex-direction:column; touch-action:none;
-    transform:translateZ(0); -webkit-transform:translateZ(0);
-    backface-visibility:hidden; -webkit-backface-visibility:hidden;
   }
   #fire .f-ic { font-size:24px; line-height:1; }
   #fire .f-tx { font-size:11px; }
@@ -127,11 +117,6 @@
 <script src="https://unpkg.com/peerjs@1.5.1/dist/peerjs.min.js"></script>
 </head>
 <body>
-<div id="rotate">
-  <div class="ic">📱</div>
-  <p>请横屏游玩</p>
-  <div class="s">把手机旋转到横屏方向，体验更佳</div>
-</div>
 <div id="wrap">
   <canvas id="game"></canvas>
   <div id="hud">
@@ -363,10 +348,14 @@ const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 let W, H, dpr;
 function isPortrait() { return window.innerHeight > window.innerWidth; }
-function toGameVec(dx, dy) { return { x: dx, y: dy }; }
+function toGameVec(dx, dy) {
+  if (isPortrait()) return { x: dy, y: -dx };
+  return { x: dx, y: dy };
+}
 function resize() {
   dpr = Math.min(window.devicePixelRatio || 1, 2);
-  W = window.innerWidth; H = window.innerHeight;
+  if (isPortrait()) { W = window.innerHeight; H = window.innerWidth; }
+  else { W = window.innerWidth; H = window.innerHeight; }
   canvas.width = W * dpr; canvas.height = H * dpr;
   canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -967,8 +956,11 @@ canvas.addEventListener('mousedown', e => {
 });
 window.addEventListener('mouseup', () => { mouseDown = false; });
 
-// 屏幕坐标 -> 游戏逻辑
-function toGamePoint(cx, cy) { return { x: cx, y: cy }; }
+// 屏幕坐标 -> 游戏逻辑(处理强制横屏旋转)
+function toGamePoint(cx, cy) {
+  if (isPortrait()) return { x: cy, y: window.innerWidth - cx };
+  return { x: cx, y: cy };
+}
 
 // 虚拟摇杆
 const joystick = document.getElementById('joystick');

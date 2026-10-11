@@ -866,15 +866,17 @@ function gameOver() {
   stopMusic();
   if (netTimer) { clearInterval(netTimer); netTimer = null; }
   const total = players.reduce((s, p) => s + p.score, 0);
+  const rank = getRank(bestS);
   const ov = document.getElementById('overlay');
   ov.style.display = 'flex';
   ov.querySelector('h1').textContent = '💀 战斗结束';
   ov.querySelector('h1').style.background = 'none';
   ov.querySelector('h1').style.color = '#f85149';
   ov.querySelector('h1').style.webkitTextFillColor = '#f85149';
-  ov.querySelector('#menu-best').textContent = '本局得分：' + total + '　|　最高分：' + (mode === 'coop' ? bestC : bestS);
+  ov.querySelector('#menu-best').textContent = '本局得分：' + total + '　|　最高分：' + (mode === 'coop' ? bestC : bestS) + '　' + rank.icon + rank.name;
   ov.querySelector('#btn-single').textContent = '再来一局';
-  ov.querySelector('#btn-coop').style.display = 'none';
+  ov.querySelector('#btn-coop').style.display = 'inline-block';
+  ov.querySelector('#btn-coop').textContent = '返回主菜单';
 }
 
 // ===== 联机 =====
@@ -1168,6 +1170,10 @@ document.getElementById('btn-single').addEventListener('click', () => {
   animId = requestAnimationFrame(loop);
 });
 document.getElementById('btn-coop').addEventListener('click', () => {
+  if (document.getElementById('btn-coop').textContent === '返回主菜单') {
+    showMenu('🔫 战术战场', '消灭敌人，别被打死！利用掩体走位');
+    return;
+  }
   netMode = 'single';
   overlay.style.display = 'none';
   document.getElementById('btn-back').style.display = 'block';

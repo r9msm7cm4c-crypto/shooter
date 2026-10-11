@@ -77,6 +77,14 @@
   #fire .f-tx { font-size:11px; }
   #fire:active { background:rgba(235,80,55,1); transform:scale(.94); }
 
+  #btn-back {
+    position:absolute; top:calc(10px + env(safe-area-inset-top)); right:14px;
+    background:rgba(30,40,30,.85); border:2px solid #4a554a; border-radius:8px;
+    color:#e6edf3; padding:6px 12px; font-size:13px; z-index:7; cursor:pointer;
+    display:none;
+  }
+  #btn-back:active { transform:scale(.94); }
+
   #overlay {
     position:absolute; inset:0; z-index:10; display:flex; flex-direction:column;
     align-items:center; justify-content:center; gap:8px; text-align:center;
@@ -138,6 +146,7 @@
   <div id="weapons"></div>
   <div id="joystick"><div class="knob" id="knob"></div></div>
   <div id="fire"><span class="f-ic">🔫</span><span class="f-tx">射击</span></div>
+  <button id="btn-back">↩ 返回</button>
   <div id="overlay">
     <h1>🔫 战术战场</h1>
     <div class="best" id="menu-best"></div>
@@ -1105,6 +1114,7 @@ const overlay = document.getElementById('overlay');
 const tipEl = document.getElementById('menu-tip');
 function showMenu(title, sub) {
   overlay.style.display = 'flex';
+  document.getElementById('btn-back').style.display = 'none';
   overlay.querySelector('h1').textContent = title;
   overlay.querySelector('h1').style.background = 'linear-gradient(180deg, #c6f0a0, #7fd66b 55%, #3f9d4a)';
   overlay.querySelector('h1').style.color = 'transparent';
@@ -1136,9 +1146,23 @@ document.getElementById('btn-easy').addEventListener('click', () => { difficulty
 document.getElementById('btn-hard').addEventListener('click', () => { difficulty = 'hard'; highlightDifficulty(); });
 document.getElementById('btn-hell').addEventListener('click', () => { difficulty = 'hell'; highlightDifficulty(); });
 
+// 返回按钮(游戏中返回主菜单)
+const backBtn = document.getElementById('btn-back');
+backBtn.addEventListener('click', () => {
+  if (running) {
+    running = false;
+    cancelAnimationFrame(animId);
+    stopMusic();
+    if (netTimer) { clearInterval(netTimer); netTimer = null; }
+  }
+  backBtn.style.display = 'none';
+  showMenu('🔫 战术战场', '消灭敌人，别被打死！利用掩体走位');
+});
+
 document.getElementById('btn-single').addEventListener('click', () => {
   netMode = 'single';
   overlay.style.display = 'none';
+  document.getElementById('btn-back').style.display = 'block';
   initGame('single');
   startMusic();
   animId = requestAnimationFrame(loop);
@@ -1146,6 +1170,7 @@ document.getElementById('btn-single').addEventListener('click', () => {
 document.getElementById('btn-coop').addEventListener('click', () => {
   netMode = 'single';
   overlay.style.display = 'none';
+  document.getElementById('btn-back').style.display = 'block';
   initGame('coop');
   startMusic();
   animId = requestAnimationFrame(loop);

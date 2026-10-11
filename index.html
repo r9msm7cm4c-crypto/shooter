@@ -425,6 +425,18 @@ const BEST_KEY_C = 'shooter2d_best_coop';
 let bestS = parseInt(localStorage.getItem(BEST_KEY_S) || '0', 10);
 let bestC = parseInt(localStorage.getItem(BEST_KEY_C) || '0', 10);
 
+// ===== 存档(累计击杀、场次、难度偏好) =====
+const SAVE_KEY = 'shooter2d_stats';
+let stats = { kills: 0, games: 0, difficulty: 'hard' };
+function loadStats() {
+  try { const d = JSON.parse(localStorage.getItem(SAVE_KEY)); if (d && typeof d === 'object') Object.assign(stats, d); } catch (e) {}
+}
+function persistStats() {
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(stats)); } catch (e) {}
+}
+loadStats();
+if (stats.difficulty && DIFFICULTIES[stats.difficulty]) difficulty = stats.difficulty;
+
 function makePlayer(x, y, color, idx) {
   return {
     x, y, color, idx, hp: 100, score: 0,
@@ -633,6 +645,7 @@ function update(dt) {
             if (p) { p.score += e.score; }
           }
           sfx.kill();
+          stats.kills++;
           addParticles(e.x, e.y, e.color, 16);
           enemies.splice(j, 1);
           updateHUD();
@@ -865,6 +878,8 @@ function gameOver() {
   sfx.gameover();
   stopMusic();
   if (netTimer) { clearInterval(netTimer); netTimer = null; }
+  stats.games++;
+  persistStats();
   const total = players.reduce((s, p) => s + p.score, 0);
   const rank = getRank(bestS);
   const ov = document.getElementById('overlay');
@@ -1122,7 +1137,7 @@ function showMenu(title, sub) {
   overlay.querySelector('h1').style.color = 'transparent';
   overlay.querySelector('h1').style.webkitTextFillColor = 'transparent';
   const rank = getRank(bestS);
-  overlay.querySelector('#menu-best').textContent = rank.icon + ' ' + rank.name + ' · 最高分 ' + bestS + '　|　双人 ' + bestC;
+  overlay.querySelector('#menu-best').textContent = rank.icon + ' ' + rank.name + ' · 最高分 ' + bestS + ' · 击杀 ' + stats.kills + ' · 场次 ' + stats.games;
   overlay.querySelector('#btn-single').textContent = '单人开始';
   overlay.querySelector('#btn-coop').style.display = 'inline-block';
   highlightDifficulty();
@@ -1144,9 +1159,9 @@ function highlightDifficulty() {
   }
 }
 
-document.getElementById('btn-easy').addEventListener('click', () => { difficulty = 'easy'; highlightDifficulty(); });
-document.getElementById('btn-hard').addEventListener('click', () => { difficulty = 'hard'; highlightDifficulty(); });
-document.getElementById('btn-hell').addEventListener('click', () => { difficulty = 'hell'; highlightDifficulty(); });
+document.getElementById('btn-easy').addEventListener('click', () => { difficulty = 'easy'; stats.difficulty = 'easy'; persistStats(); highlightDifficulty(); });
+document.getElementById('btn-hard').addEventListener('click', () => { difficulty = 'hard'; stats.difficulty = 'hard'; persistStats(); highlightDifficulty(); });
+document.getElementById('btn-hell').addEventListener('click', () => { difficulty = 'hell'; stats.difficulty = 'hell'; persistStats(); highlightDifficulty(); });
 
 // 返回按钮(游戏中返回主菜单)
 const backBtn = document.getElementById('btn-back');

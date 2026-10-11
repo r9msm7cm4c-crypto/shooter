@@ -141,6 +141,11 @@
   <div id="overlay">
     <h1>🔫 战术战场</h1>
     <div class="best" id="menu-best"></div>
+    <div class="row" id="diff-row">
+      <button class="btn alt dbtn" id="btn-easy">简单</button>
+      <button class="btn alt dbtn" id="btn-hard">困难</button>
+      <button class="btn alt dbtn" id="btn-hell">极难</button>
+    </div>
     <div class="row">
       <button class="btn" id="btn-single">单人开始</button>
       <button class="btn alt" id="btn-coop">双人合作</button>
@@ -258,6 +263,29 @@ const ENEMY_TYPES = [
   { hp:1, r:12, speed:110, color:'#e8a33d', score:15, hair:'#5a3a10' },
   { hp:3, r:24, speed:40, color:'#a06bde', score:30, hair:'#2a1a3a' },
 ];
+
+// ===== 难度梯度 =====
+const DIFFICULTIES = {
+  easy: { name:'简单', speedMul:0.7, hpMul:0.6, spawnRate:2.2, maxEnemies:4 },
+  hard: { name:'困难', speedMul:1.2, hpMul:1.2, spawnRate:1.2, maxEnemies:8 },
+  hell: { name:'极难', speedMul:1.7, hpMul:1.6, spawnRate:0.8, maxEnemies:12 },
+};
+let difficulty = 'hard';
+
+// ===== 排名等级(基于最高分) =====
+const RANKS = [
+  { min:0,    name:'青铜', icon:'🥉' },
+  { min:500,  name:'白银', icon:'🥈' },
+  { min:1500, name:'黄金', icon:'🥇' },
+  { min:3000, name:'铂金', icon:'💎' },
+  { min:5000, name:'钻石', icon:'💠' },
+  { min:8000, name:'王者', icon:'👑' },
+];
+function getRank(score) {
+  let r = RANKS[0];
+  for (const x of RANKS) if (score >= x.min) r = x;
+  return r;
+}
 
 // ===== 工具 =====
 function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
@@ -437,8 +465,10 @@ function spawnEnemy() {
     x = clamp(x, 20, WORLD_W - 20);
     y = clamp(y, 20, WORLD_H - 20);
   }
+  const diff = DIFFICULTIES[difficulty];
   const scale = 1 + Math.min(1, (performance.now() / 1000) * 0.02);
-  enemies.push({ id: nextEnemyId++, x, y, r: t.r, hp: t.hp, maxHp: t.hp, speed: t.speed * scale + rand(-5, 10), color: t.color, score: t.score, hair: t.hair, skin: '#f2c79b', flash: 0, angle: 0 });
+  const hp = Math.max(1, Math.round(t.hp * diff.hpMul));
+  enemies.push({ id: nextEnemyId++, x, y, r: t.r, hp, maxHp: hp, speed: t.speed * scale * diff.speedMul + rand(-5, 10), color: t.color, score: t.score, hair: t.hair, skin: '#f2c79b', flash: 0, angle: 0, spawnT: 0, spawnDur: 0.6 });
 }
 
 function addParticles(x, y, color, n) {
@@ -531,19 +561,25 @@ function update(dt) {
   }
 
   if (netMode !== 'guest') {
-    const rate = mode === 'coop' ? 0.9 : 1.5;
-    const maxEnemies = 6;
+    const diff = DIFFICULTIES[difficulty];
+    const rate = mode === 'coop' ? diff.spawnRate * 1.5 : diff.spawnRate;
+    const maxEnemies = diff.maxEnemies;
     spawnTimer -= dt;
     if (spawnTimer <= 0 && enemies.length < maxEnemies) {
       spawnEnemy();
       if (mode === 'coop' && enemies.length < maxEnemies) spawnEnemy();
       const total = players.reduce((s, p) => s + p.score, 0);
-      spawnTimer = Math.max(0.5, rate - total * 0.003);
+      spawnTimer = Math.max(0.4, rate - total * 0.003);
     }
 
     for (let i = enemies.length - 1; i >= 0; i--) {
       const e = enemies[i];
       e.flash = Math.max(0, e.flash - dt);
+      // 空降出场动画(降落过程中不移动、不攻击)
+      if (e.spawnT < e.spawnDur) {
+        e.spawnT += dt;
+        continue;
+      }
       let target = players[0], bd = Infinity;
       for (const p of players) { const d = dist(e, p); if (d < bd) { bd = d; target = p; } }
       const dx = target.x - e.x, dy = target.y - e.y;
@@ -722,6 +758,18 @@ function draw() {
 
   // 敌人(拟人小人,凶恶表情)
   for (const e of enemies) {
+    // 空降出场特效(降落光圈 + 缩放淡入)
+    if (e.spawnT < e.spawnDur) {
+      const p = e.spawnT / e.spawnDur;
+      ctx.strokeStyle = 'rgba(255,210,63,' + (1 - p) * 0.8 + ')';
+      ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(e.x, e.y, e.r + (1 - p) * 34, 0, Math.PI * 2); ctx.stroke();
+      const s = 0.3 + p * 0.7;
+      ctx.globalAlpha = 0.4 + p * 0.6;
+      drawHuman(e.x, e.y, e.r * s, e.angle, { body: e.color, hair: e.hair, skin: e.skin, angry: true });
+      ctx.globalAlpha = 1;
+      continue;
+    }
     drawHuman(e.x, e.y, e.r, e.angle, { body: e.color, hair: e.hair, skin: e.skin, angry: true });
     if (e.flash > 0) { ctx.fillStyle = 'rgba(255,255,255,.7)'; ctx.beginPath(); ctx.arc(e.x, e.y, e.r, 0, Math.PI * 2); ctx.fill(); }
     if (e.maxHp > 1) {
@@ -1061,11 +1109,32 @@ function showMenu(title, sub) {
   overlay.querySelector('h1').style.background = 'linear-gradient(180deg, #c6f0a0, #7fd66b 55%, #3f9d4a)';
   overlay.querySelector('h1').style.color = 'transparent';
   overlay.querySelector('h1').style.webkitTextFillColor = 'transparent';
-  overlay.querySelector('#menu-best').textContent = '🏆 单人最高分 ' + bestS + '　|　双人最高分 ' + bestC;
+  const rank = getRank(bestS);
+  overlay.querySelector('#menu-best').textContent = rank.icon + ' ' + rank.name + ' · 最高分 ' + bestS + '　|　双人 ' + bestC;
   overlay.querySelector('#btn-single').textContent = '单人开始';
   overlay.querySelector('#btn-coop').style.display = 'inline-block';
+  highlightDifficulty();
   tipEl.innerHTML = '🕹️ 手机：左摇杆移动 · 右按钮射击　⌨️ 电脑：WASD 移动 · 鼠标射击 · 1-5 换枪 · R 换弹';
 }
+
+function highlightDifficulty() {
+  const map = { easy: 'btn-easy', hard: 'btn-hard', hell: 'btn-hell' };
+  for (const k in map) {
+    const btn = document.getElementById(map[k]);
+    if (!btn) continue;
+    if (difficulty === k) {
+      btn.style.borderColor = '#ffd23f';
+      btn.style.background = 'linear-gradient(180deg, #e8a33d, #c07d20)';
+    } else {
+      btn.style.borderColor = '';
+      btn.style.background = '';
+    }
+  }
+}
+
+document.getElementById('btn-easy').addEventListener('click', () => { difficulty = 'easy'; highlightDifficulty(); });
+document.getElementById('btn-hard').addEventListener('click', () => { difficulty = 'hard'; highlightDifficulty(); });
+document.getElementById('btn-hell').addEventListener('click', () => { difficulty = 'hell'; highlightDifficulty(); });
 
 document.getElementById('btn-single').addEventListener('click', () => {
   netMode = 'single';

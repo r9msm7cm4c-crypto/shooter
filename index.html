@@ -278,20 +278,20 @@ let obstacles = [];
 function genObstacles() {
   obstacles = [];
   const rng = mulberry32(20261010);
-  const n = Math.floor(W / 140) + Math.floor(H / 140) + 2;
-  const tryMax = 200;
+  const n = Math.floor(WORLD_W / 220) + Math.floor(WORLD_H / 220) + 4;
+  const tryMax = 300;
   let placed = 0, tries = 0;
   while (placed < n && tries < tryMax) {
     tries++;
     const type = rng() < 0.55 ? 'crate' : 'sandbag';
     const w = type === 'crate' ? 40 + rng() * 30 : 60 + rng() * 50;
     const h = type === 'crate' ? 40 + rng() * 30 : 22 + rng() * 14;
-    const x = 20 + rng() * (W - w - 40);
-    const y = 60 + rng() * (H - h - 80);
-    const spawns = [{ x: W * 0.18, y: H * 0.5 }, { x: W * 0.82, y: H * 0.5 }];
+    const x = 20 + rng() * (WORLD_W - w - 40);
+    const y = 60 + rng() * (WORLD_H - h - 80);
+    const spawns = [{ x: WORLD_W * 0.5, y: WORLD_H * 0.5 }];
     let nearSpawn = false;
     for (const s of spawns) {
-      if (Math.hypot(x + w / 2 - s.x, y + h / 2 - s.y) < 120) { nearSpawn = true; break; }
+      if (Math.hypot(x + w / 2 - s.x, y + h / 2 - s.y) < 140) { nearSpawn = true; break; }
     }
     if (nearSpawn) continue;
     let overlap = false;
@@ -317,8 +317,8 @@ function moveWithCollide(e, dx, dy) {
   for (const o of obstacles) if (circleRect(e.x, e.y, e.r, o)) e.x -= dx;
   e.y += dy;
   for (const o of obstacles) if (circleRect(e.x, e.y, e.r, o)) e.y -= dy;
-  e.x = clamp(e.x, e.r, W - e.r);
-  e.y = clamp(e.y, e.r, H - e.r);
+  e.x = clamp(e.x, e.r, WORLD_W - e.r);
+  e.y = clamp(e.y, e.r, WORLD_H - e.r);
 }
 function collides(e) {
   for (const o of obstacles) if (circleRect(e.x, e.y, e.r, o)) return true;
@@ -340,13 +340,14 @@ function moveEnemy(e, dx, dy) {
     if (collides(e)) { e.x = cx - px; e.y = cy - py; }
     if (collides(e)) { e.x = cx; e.y = cy; }
   }
-  e.x = clamp(e.x, e.r, W - e.r);
-  e.y = clamp(e.y, e.r, H - e.r);
+  e.x = clamp(e.x, e.r, WORLD_W - e.r);
+  e.y = clamp(e.y, e.r, WORLD_H - e.r);
 }
 // ===== 游戏状态 =====
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 let W, H, dpr;
+let WORLD_W, WORLD_H, camX = 0, camY = 0;
 function isPortrait() { return window.innerHeight > window.innerWidth; }
 function toGameVec(dx, dy) {
   if (isPortrait()) return { x: dy, y: -dx };
@@ -356,6 +357,7 @@ function resize() {
   dpr = Math.min(window.devicePixelRatio || 1, 2);
   if (isPortrait()) { W = window.innerHeight; H = window.innerWidth; }
   else { W = window.innerWidth; H = window.innerHeight; }
+  WORLD_W = W * 2; WORLD_H = H * 2;
   canvas.width = W * dpr; canvas.height = H * dpr;
   canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -391,8 +393,8 @@ function initGame(m) {
   enemies = []; bullets = []; particles = []; keys = {};
   spawnTimer = 1.0;
   genObstacles();
-  players = [makePlayer(W * 0.18, H * 0.5, '#4da6ff', 0)];
-  if (mode === 'coop') players.push(makePlayer(W * 0.82, H * 0.5, '#5cd36b', 1));
+  players = [makePlayer(WORLD_W * 0.5, WORLD_H * 0.5, '#4da6ff', 0)];
+  if (mode === 'coop') players.push(makePlayer(WORLD_W * 0.5 + 50, WORLD_H * 0.5, '#5cd36b', 1));
   lastTime = performance.now();
   document.getElementById('phud2').style.visibility = mode === 'coop' ? 'visible' : 'hidden';
   document.getElementById('mode-label').textContent = mode === 'coop' ? '双人合作' : '单人模式';
@@ -405,10 +407,15 @@ function spawnEnemy() {
   const t = tier < 0.55 ? ENEMY_TYPES[0] : tier < 0.8 ? ENEMY_TYPES[1] : ENEMY_TYPES[2];
   const side = Math.floor(Math.random() * 4);
   let x, y;
-  if (side === 0) { x = rand(0, W); y = -40; }
-  else if (side === 1) { x = rand(0, W); y = H + 40; }
-  else if (side === 2) { x = -40; y = rand(0, H); }
-  else { x = W + 40; y = rand(0, H); }
+  const cx = players.length ? players[0].x : WORLD_W / 2;
+  const cy = players.length ? players[0].y : WORLD_H / 2;
+  const m = 60;
+  if (side === 0) { x = rand(cx - W / 2, cx + W / 2); y = cy - H / 2 - m; }
+  else if (side === 1) { x = rand(cx - W / 2, cx + W / 2); y = cy + H / 2 + m; }
+  else if (side === 2) { x = cx - W / 2 - m; y = rand(cy - H / 2, cy + H / 2); }
+  else { x = cx + W / 2 + m; y = rand(cy - H / 2, cy + H / 2); }
+  x = clamp(x, 20, WORLD_W - 20);
+  y = clamp(y, 20, WORLD_H - 20);
   const scale = 1 + Math.min(1, (performance.now() / 1000) * 0.02);
   enemies.push({ id: nextEnemyId++, x, y, r: t.r, hp: t.hp, maxHp: t.hp, speed: t.speed * scale + rand(-5, 10), color: t.color, score: t.score, hair: t.hair, skin: '#f2c79b', flash: 0, angle: 0 });
 }
@@ -496,14 +503,21 @@ function update(dt) {
     if (p.shooting) shoot(p);
   }
 
+  // 相机跟随玩家(取所有玩家中心)
+  if (players.length) {
+    camX = players.reduce((s, p) => s + p.x, 0) / players.length;
+    camY = players.reduce((s, p) => s + p.y, 0) / players.length;
+  }
+
   if (netMode !== 'guest') {
-    const rate = mode === 'coop' ? 0.5 : 0.85;
+    const rate = mode === 'coop' ? 0.9 : 1.5;
+    const maxEnemies = 6;
     spawnTimer -= dt;
-    if (spawnTimer <= 0) {
+    if (spawnTimer <= 0 && enemies.length < maxEnemies) {
       spawnEnemy();
-      if (mode === 'coop') spawnEnemy();
+      if (mode === 'coop' && enemies.length < maxEnemies) spawnEnemy();
       const total = players.reduce((s, p) => s + p.score, 0);
-      spawnTimer = Math.max(0.22, rate - total * 0.0035);
+      spawnTimer = Math.max(0.5, rate - total * 0.003);
     }
 
     for (let i = enemies.length - 1; i >= 0; i--) {
@@ -533,7 +547,7 @@ function update(dt) {
   for (let i = bullets.length - 1; i >= 0; i--) {
     const b = bullets[i];
     b.x += b.vx * dt; b.y += b.vy * dt; b.life -= dt;
-    if (b.life <= 0 || b.x < -30 || b.x > W + 30 || b.y < -30 || b.y > H + 30) { bullets.splice(i, 1); continue; }
+    if (b.life <= 0 || b.x < -30 || b.x > WORLD_W + 30 || b.y < -30 || b.y > WORLD_H + 30) { bullets.splice(i, 1); continue; }
     let blocked = false;
     for (const o of obstacles) {
       if (pointRect(b.x, b.y, o)) { blocked = true; break; }
@@ -576,8 +590,8 @@ let grassDots = null;
 function buildGrass() {
   if (!W) return;
   grassDots = [];
-  for (let i = 0; i < 300; i++) {
-    grassDots.push({ x: Math.random() * W, y: Math.random() * H, c: Math.random() < 0.5 ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.05)', s: 1 + Math.random() * 3 });
+  for (let i = 0; i < 900; i++) {
+    grassDots.push({ x: Math.random() * WORLD_W, y: Math.random() * WORLD_H, c: Math.random() < 0.5 ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.05)', s: 1 + Math.random() * 3 });
   }
 }
 
@@ -622,21 +636,23 @@ function drawHuman(x, y, r, angle, o) {
 }
 
 function draw() {
-  const g = ctx.createLinearGradient(0, 0, 0, H);
+  ctx.save();
+  ctx.translate(W / 2 - camX, H / 2 - camY);
+  const g = ctx.createLinearGradient(0, 0, 0, WORLD_H);
   g.addColorStop(0, '#1c2b1a');
   g.addColorStop(0.5, '#20301d');
   g.addColorStop(1, '#182615');
   ctx.fillStyle = g;
-  ctx.fillRect(0, 0, W, H);
+  ctx.fillRect(0, 0, WORLD_W, WORLD_H);
 
   for (const d of grassDots) {
     ctx.fillStyle = d.c;
     ctx.fillRect(d.x, d.y, d.s, d.s);
   }
   ctx.fillStyle = 'rgba(255,255,255,0.02)';
-  for (let i = 0; i < 8; i++) {
+  for (let i = 0; i < 16; i++) {
     ctx.beginPath();
-    ctx.arc((i * 137) % W, (i * 211) % H, 80 + (i * 13) % 60, 0, Math.PI * 2);
+    ctx.arc((i * 137) % WORLD_W, (i * 211) % WORLD_H, 80 + (i * 13) % 60, 0, Math.PI * 2);
     ctx.fill();
   }
 
@@ -705,6 +721,7 @@ function draw() {
   if (remotePlayer) {
     drawHuman(remotePlayer.x, remotePlayer.y, 18, remotePlayer.angle, { body: remotePlayer.color, hair: remotePlayer.hair, skin: remotePlayer.skin, angry: false, gun: true });
   }
+  ctx.restore();
 }
 // ===== HUD / 武器 UI =====
 function updateHUD() {
@@ -956,13 +973,15 @@ canvas.addEventListener('mousedown', e => {
 });
 window.addEventListener('mouseup', () => { mouseDown = false; });
 
-// 屏幕坐标 -> 游戏逻辑(处理强制横屏旋转)
+// 屏幕坐标 -> 游戏世界坐标(处理强制横屏旋转 + 相机偏移)
 function toGamePoint(cx, cy) {
-  if (isPortrait()) return { x: cy, y: window.innerWidth - cx };
-  return { x: cx, y: cy };
+  let x, y;
+  if (isPortrait()) { x = cy; y = window.innerWidth - cx; }
+  else { x = cx; y = cy; }
+  return { x: x + camX - W / 2, y: y + camY - H / 2 };
 }
 
-// 虚拟摇杆
+// 虚拟摇杆(触屏 touch 事件 + 桌面 mouse 事件,支持移动时同时点其他按钮)
 const joystick = document.getElementById('joystick');
 const knob = document.getElementById('knob');
 const fireBtn = document.getElementById('fire');
@@ -982,15 +1001,31 @@ function resetJoy() {
   knob.style.transform = 'translate(-50%,-50%)';
   if (players[0]) { players[0].joyX = 0; players[0].joyY = 0; }
 }
-joystick.addEventListener('pointerdown', e => { joyId = e.pointerId; joystick.setPointerCapture(e.pointerId); handleJoy(e.clientX, e.clientY); });
-joystick.addEventListener('pointermove', e => { if (e.pointerId === joyId) handleJoy(e.clientX, e.clientY); });
-function joyEnd(e) { if (e.pointerId === joyId) { joyId = null; resetJoy(); } }
-joystick.addEventListener('pointerup', joyEnd);
-joystick.addEventListener('pointercancel', joyEnd);
+// 触屏摇杆
+joystick.addEventListener('touchstart', e => {
+  const t = e.changedTouches[0];
+  joyId = t.identifier;
+  handleJoy(t.clientX, t.clientY);
+  e.preventDefault();
+}, { passive: false });
+joystick.addEventListener('touchmove', e => {
+  for (const t of e.changedTouches) if (t.identifier === joyId) handleJoy(t.clientX, t.clientY);
+  e.preventDefault();
+}, { passive: false });
+function joyEnd() { joyId = null; resetJoy(); }
+joystick.addEventListener('touchend', joyEnd);
+joystick.addEventListener('touchcancel', joyEnd);
+// 桌面鼠标摇杆
+joystick.addEventListener('mousedown', e => { joyId = -1; handleJoy(e.clientX, e.clientY); });
+window.addEventListener('mousemove', e => { if (joyId === -1) handleJoy(e.clientX, e.clientY); });
+window.addEventListener('mouseup', () => { if (joyId === -1) joyEnd(); });
 
-fireBtn.addEventListener('pointerdown', e => { e.preventDefault(); joyFire = true; });
-window.addEventListener('pointerup', () => { joyFire = false; });
-window.addEventListener('pointercancel', () => { joyFire = false; });
+// 射击按钮(触屏 + 鼠标)
+fireBtn.addEventListener('touchstart', e => { e.preventDefault(); joyFire = true; }, { passive: false });
+fireBtn.addEventListener('touchend', () => { joyFire = false; });
+fireBtn.addEventListener('touchcancel', () => { joyFire = false; });
+fireBtn.addEventListener('mousedown', () => { joyFire = true; });
+window.addEventListener('mouseup', () => { joyFire = false; });
 
 // ===== 菜单 / 初始化 =====
 const overlay = document.getElementById('overlay');

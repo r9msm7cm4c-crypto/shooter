@@ -636,6 +636,10 @@ function drawHuman(x, y, r, angle, o) {
 }
 
 function draw() {
+  // 先清屏(视口大小),防止相机移到地图边界外时露出残影
+  ctx.fillStyle = '#182615';
+  ctx.fillRect(0, 0, W, H);
+
   ctx.save();
   ctx.translate(W / 2 - camX, H / 2 - camY);
   const g = ctx.createLinearGradient(0, 0, 0, WORLD_H);

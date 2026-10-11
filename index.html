@@ -324,21 +324,33 @@ function collides(e) {
   for (const o of obstacles) if (circleRect(e.x, e.y, e.r, o)) return true;
   return false;
 }
-// 敌人移动(带绕行,避免被掩体卡死)
+function collidesAt(x, y, r) {
+  for (const o of obstacles) if (circleRect(x, y, r, o)) return true;
+  return false;
+}
+// 敌人移动(智能绕行,避免被掩体卡死)
 function moveEnemy(e, dx, dy) {
   const speed = Math.hypot(dx, dy);
   if (speed < 0.001) return;
   const ox = e.x, oy = e.y;
   moveWithCollide(e, dx, dy);
   const moved = Math.hypot(e.x - ox, e.y - oy);
-  if (moved < speed * 0.35) {
+  // 被挡时,沿切线滑动绕行(两个方向都试)
+  if (moved < speed * 0.5) {
     const remain = speed - moved;
-    const px = -dy / speed * remain;
-    const py = dx / speed * remain;
-    const cx = e.x, cy = e.y;
-    e.x = cx + px; e.y = cy + py;
-    if (collides(e)) { e.x = cx - px; e.y = cy - py; }
-    if (collides(e)) { e.x = cx; e.y = cy; }
+    const tx = -dy / speed, ty = dx / speed;
+    for (const s of [1, -1]) {
+      const nx = e.x + tx * remain * s;
+      const ny = e.y + ty * remain * s;
+      if (!collidesAt(nx, ny, e.r)) { e.x = nx; e.y = ny; break; }
+    }
+  }
+  // 若仍卡在障碍里,多方向推开
+  if (collidesAt(e.x, e.y, e.r)) {
+    for (const [ax, ay] of [[1,0],[-1,0],[0,1],[0,-1],[1,1],[-1,-1],[1,-1],[-1,1]]) {
+      const nx = e.x + ax * 8, ny = e.y + ay * 8;
+      if (!collidesAt(nx, ny, e.r)) { e.x = nx; e.y = ny; break; }
+    }
   }
   e.x = clamp(e.x, e.r, WORLD_W - e.r);
   e.y = clamp(e.y, e.r, WORLD_H - e.r);
@@ -416,6 +428,15 @@ function spawnEnemy() {
   else { x = cx + W / 2 + m; y = rand(cy - H / 2, cy + H / 2); }
   x = clamp(x, 20, WORLD_W - 20);
   y = clamp(y, 20, WORLD_H - 20);
+  // 若生成位置落在障碍上,向玩家方向偏移,直到脱离障碍
+  const dirx = cx - x, diry = cy - y;
+  const dl = Math.hypot(dirx, diry) || 1;
+  for (let k = 0; k < 30 && collidesAt(x, y, t.r); k++) {
+    x += dirx / dl * 12;
+    y += diry / dl * 12;
+    x = clamp(x, 20, WORLD_W - 20);
+    y = clamp(y, 20, WORLD_H - 20);
+  }
   const scale = 1 + Math.min(1, (performance.now() / 1000) * 0.02);
   enemies.push({ id: nextEnemyId++, x, y, r: t.r, hp: t.hp, maxHp: t.hp, speed: t.speed * scale + rand(-5, 10), color: t.color, score: t.score, hair: t.hair, skin: '#f2c79b', flash: 0, angle: 0 });
 }
